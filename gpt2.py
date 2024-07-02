@@ -25,6 +25,12 @@ context_length = 256  # number of tokens processed in a single batch
 train_split = 0.7  # percentage of data to use from total data for training
 
 
+# used to define size of embeddings
+d_model = 512
+n_heads = 4  # number of self-attention heads. should be divisible with d_model
+n_layers = 2  # number of gpt blocks/layers
+
+
 # training setup
 epochs = 2000
 eval_steps = 500  # perform evaluation in every n steps
@@ -74,12 +80,6 @@ class DataLoader:
 
 train_loader = DataLoader(train_data, train_batch_size, context_length)
 eval_loader = DataLoader(eval_data, eval_batch_size, context_length)
-
-
-# used to define size of embeddings
-d_model = 512
-n_heads = 4  # number of self-attention heads. should be divisible with d_model
-n_layers = 2  # number of gpt blocks/layers
 
 
 class MultiHeadAttention(nn.Module):
