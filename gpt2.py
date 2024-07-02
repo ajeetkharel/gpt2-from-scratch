@@ -249,36 +249,29 @@ m = GPT(vocab_size=vocab_size, d_model=d_model, n_heads=n_heads, n_layers=n_laye
 m = torch.compile(m)
 
 
-optim = torch.optim.AdamW(m.parameters(), lr=lr)
+optim = torch.optim.AdamW(m.parameters(), lr=lr, weight_decay=0.1)
+scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optim, T_max=3000, eta_min=lr*0.1)
 
-for ep in range(epochs):
-    start_time = time.time()
-
+for e in range(epochs):
     xb, yb = train_loader.get_batch()
 
     logits, loss = m(xb, yb)
     optim.zero_grad(set_to_none=True)
     loss.backward()
+
+    # gradient clipping
+    torch.nn.utils.clip_grad_norm_(m.parameters(), max_norm=1)
+
     optim.step()
+    scheduler.step()
 
-    # Synchronize before calculating time for training step
-    torch.cuda.synchronize()
-
-    if ep % eval_steps == 0 or ep == epochs - 1:
+    if e % eval_steps == 0 or e == epochs-1:
         m.eval()
         with torch.no_grad():
             xvb, yvb = eval_loader.get_batch()
             _, e_loss = m(xvb, yvb)
 
-        # Synchronize before calculating elapsed time
-        torch.cuda.synchronize()
-
-        end_time = time.time()  # Record the end time
-        elapsed_time = end_time - start_time  # Calculate the elapsed time
-
-        print(
-            f"Epoch: {ep}\tlr: {lr}\ttrain_loss: {loss:.4f}\teval_loss: {e_loss:.4f}\ttime: {elapsed_time:.2f} sec"
-        )
+        print(f"Epoch: {e}\ttrain_loss: {loss:.4f}\teval_loss: {e_loss:.4f}")
 
         m.train()  # Back to training mode
 
