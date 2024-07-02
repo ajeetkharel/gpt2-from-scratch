@@ -21,14 +21,14 @@ data = torch.tensor(tokenizer.encode(text), dtype=torch.long, device=device)
 
 train_batch_size = 16  # training batch size
 eval_batch_size = 8  # evaluation batch size
-context_length = 256  # number of tokens processed in a single batch
+context_length = 512  # number of tokens processed in a single batch
 train_split = 0.7  # percentage of data to use from total data for training
 
 
 # used to define size of embeddings
-d_model = 512
+d_model = 768
 n_heads = 4  # number of self-attention heads. should be divisible with d_model
-n_layers = 2  # number of gpt blocks/layers
+n_layers = 8  # number of gpt blocks/layers
 
 
 # training setup
@@ -204,6 +204,9 @@ class GPT(nn.Module):
         )
         self.linear1 = nn.Linear(d_model, vocab_size)
 
+        #parameter sharing
+        self.wte.weight = self.linear1.weight
+
     def forward(self, inputs, targets=None):
         logits = self.wte(inputs)  # dim -> batch_size, sequence_length, d_model
         logits = self.wpe(logits)
@@ -242,7 +245,7 @@ class GPT(nn.Module):
         return [tokenizer.decode(out.tolist()) for out in output]
 
 
-m = GPT(vocab_size=vocab_size, d_model=d_model, n_heads=n_heads, n_layers=3).to(device)
+m = GPT(vocab_size=vocab_size, d_model=d_model, n_heads=n_heads, n_layers=n_layers).to(device)
 m = torch.compile(m)
 
 
